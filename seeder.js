@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import users from './data/users.js'; // Need users too
+import users from './data/users.js';
 import products from './data/products.js';
+import orders from './data/orders.js';
 import User from './models/userModel.js';
 import Product from './models/productModel.js';
 import Order from './models/orderModel.js';
@@ -25,7 +26,23 @@ const importData = async () => {
             return { ...product, user: adminUser };
         });
 
-        await Product.insertMany(sampleProducts);
+        const createdProducts = await Product.insertMany(sampleProducts);
+
+        const sampleOrders = orders.map((order) => {
+            return {
+                ...order,
+                user: adminUser,
+                orderItems: order.orderItems.map((item) => {
+                    const productFromDb = createdProducts.find((p) => p.name === item.name);
+                    return {
+                        ...item,
+                        product: productFromDb ? productFromDb._id : null
+                    };
+                }),
+            };
+        });
+
+        await Order.insertMany(sampleOrders);
 
         console.log('Data Imported!');
         process.exit();
