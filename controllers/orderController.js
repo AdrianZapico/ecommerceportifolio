@@ -43,6 +43,32 @@ const addOrderItems = async (req, res, next) => {
     }
 };
 
+// @desc    Update order
+// @route   PUT /api/orders/:id
+// @access  Public
+const updateOrder = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (order) {
+            order.isPaid = req.body.isPaid === undefined ? order.isPaid : req.body.isPaid;
+            order.isDelivered = req.body.isDelivered === undefined ? order.isDelivered : req.body.isDelivered;
+
+            // Allow updating other fields if necessary for MVP flexiblity
+            if (req.body.paidAt) order.paidAt = req.body.paidAt;
+            if (req.body.deliveredAt) order.deliveredAt = req.body.deliveredAt;
+
+            const updatedOrder = await order.save();
+            res.json(updatedOrder);
+        } else {
+            res.status(404);
+            throw new Error('Order not found');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Buscar todos os pedidos
 // @route   GET /api/orders
 // @access  Public
@@ -73,4 +99,4 @@ const getOrderById = async (req, res, next) => {
     }
 };
 
-export { addOrderItems, getOrders, getOrderById };
+export { addOrderItems, getOrders, getOrderById, updateOrder };
