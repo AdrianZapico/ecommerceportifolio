@@ -69,6 +69,25 @@ const updateOrder = async (req, res, next) => {
     }
 };
 
+// @desc    Delete order
+// @route   DELETE /api/orders/:id
+// @access  Public
+const deleteOrder = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (order) {
+            await order.deleteOne();
+            res.json({ message: 'Order removed' });
+        } else {
+            res.status(404);
+            throw new Error('Order not found');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Buscar todos os pedidos
 // @route   GET /api/orders
 // @access  Public
@@ -99,4 +118,4 @@ const getOrderById = async (req, res, next) => {
     }
 };
 
-export { addOrderItems, getOrders, getOrderById, updateOrder };
+export { addOrderItems, getOrders, getOrderById, updateOrder, deleteOrder };

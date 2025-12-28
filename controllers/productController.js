@@ -72,6 +72,25 @@ const updateProduct = async (req, res, next) => {
     }
 };
 
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Public (should be Private/Admin)
+const deleteProduct = async (req, res, next) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (product) {
+            await product.deleteOne();
+            res.json({ message: 'Product removed' });
+        } else {
+            res.status(404);
+            throw new Error('Product not found');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Buscar todos os produtos
 // @route   GET /api/products
 // @access  Public
@@ -102,4 +121,4 @@ const getProductById = async (req, res, next) => {
     }
 };
 
-export { getProducts, getProductById, createProduct, updateProduct };
+export { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
