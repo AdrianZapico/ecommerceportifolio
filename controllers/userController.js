@@ -1,5 +1,5 @@
 import User from '../models/userModel.js';
-
+import generateToken from '../utils/generateToken.js';
 
 // @desc    Register a new user
 // @route   POST /api/users
@@ -28,6 +28,7 @@ const registerUser = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
+                token: generateToken(user._id), // <--- ADICIONADO: Gera o token ao registrar
             });
         } else {
             res.status(400);
@@ -40,7 +41,7 @@ const registerUser = async (req, res, next) => {
 
 // @desc    Update user
 // @route   PUT /api/users/:id
-// @access  Public (should be Private/Admin)
+// @access  Private/Admin
 const updateUser = async (req, res, next) => {
     try {
         const { name, email, password, isAdmin } = req.body;
@@ -51,7 +52,7 @@ const updateUser = async (req, res, next) => {
             user.name = name || user.name;
             user.email = email || user.email;
             if (password) {
-                user.password = password; // Should be hashed in model middleware
+                user.password = password;
             }
             user.isAdmin = isAdmin === undefined ? user.isAdmin : isAdmin;
 
@@ -74,7 +75,7 @@ const updateUser = async (req, res, next) => {
 
 // @desc    Delete user
 // @route   DELETE /api/users/:id
-// @access  Public (should be Private/Admin)
+// @access  Private/Admin
 const deleteUser = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
@@ -93,7 +94,7 @@ const deleteUser = async (req, res, next) => {
 
 // @desc    Buscar todos os usuários
 // @route   GET /api/users
-// @access  Public
+// @access  Private/Admin
 const getUsers = async (req, res, next) => {
     try {
         const users = await User.find({});
@@ -105,7 +106,7 @@ const getUsers = async (req, res, next) => {
 
 // @desc    Buscar um único usuário por ID
 // @route   GET /api/users/:id
-// @access  Public
+// @access  Private/Admin
 const getUserById = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
