@@ -122,4 +122,32 @@ const getUserById = async (req, res, next) => {
     }
 };
 
-export { getUsers, getUserById, registerUser, updateUser, deleteUser };
+// @desc    Auth user & get token
+// @route   POST /api/users/auth
+// @access  Public
+const authUser = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        // Busca o usuário pelo email
+        const user = await User.findOne({ email });
+
+        // Verifica se usuário existe E se a senha bate (usando o método do Model)
+        if (user && (await user.matchPassword(password))) {
+            res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                token: generateToken(user._id), // Gera o token para o Frontend salvar
+            });
+        } else {
+            res.status(401);
+            throw new Error('Email ou senha inválidos');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export { getUsers, getUserById, registerUser, updateUser, deleteUser, authUser };
