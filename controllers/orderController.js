@@ -19,9 +19,17 @@ const addOrderItems = async (req, res, next) => {
             res.status(400);
             throw new Error('No order items');
         } else {
+            // --- CORREÇÃO AQUI ---
+            // Traduzimos os itens para o formato que o banco aceita
+            const dbOrderItems = orderItems.map((item) => ({
+                ...item,
+                product: item._id, // O segredo: _id vira product
+                _id: undefined     // Removemos o _id antigo para evitar confusão
+            }));
+
             const order = new Order({
-                orderItems,
-                user: req.user._id, // <--- MUDANÇA CRUCIAL: O user vem do Token, não do Body
+                orderItems: dbOrderItems, // Usamos a lista traduzida
+                user: req.user._id,
                 shippingAddress,
                 paymentMethod,
                 itemsPrice,
