@@ -83,22 +83,33 @@ const deleteProduct = async (req, res, next) => {
 // @desc    Fetch all products
 // @route   GET /api/products
 // @access  Public
+// @desc    Fetch all products
+// @route   GET /api/products
+// @access  Public
 const getProducts = async (req, res, next) => {
     try {
-        // Verifica se existe '?keyword=algumacoisa' na URL
+        const pageSize = 4;
+        const page = Number(req.query.pageNumber) || 1;
+
         const keyword = req.query.keyword
             ? {
                 name: {
-                    $regex: req.query.keyword, // Busca parcial (ex: "ipho" acha "iPhone")
-                    $options: 'i',             // Case insensitive (ignora maiúsculas/minúsculas)
+                    $regex: req.query.keyword,
+                    $options: 'i',
                 },
             }
             : {};
 
-        // Aplica o filtro na busca do banco
-        const products = await Product.find({ ...keyword });
+        const count = await Product.countDocuments({ ...keyword });
 
-        res.json(products);
+
+        const products = await Product.find({ ...keyword })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1));
+
+
+        res.json({ products, page, pages: Math.ceil(count / pageSize) });
+
     } catch (error) {
         next(error);
     }
