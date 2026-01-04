@@ -146,4 +146,52 @@ const getTopProducts = async (req, res, next) => {
     }
 };
 
-export { getProducts, getProductById, createProduct, updateProduct, deleteProduct, getTopProducts };
+// @desc    Create new review
+// @route   POST /api/products/:id/reviews
+// @access  Private
+const createProductReview = async (req, res, next) => {
+    try {
+        const { rating, comment } = req.body;
+        const product = await Product.findById(req.params.id);
+
+        if (product) {
+            // Verifica se o usuário já avaliou este produto
+            const alreadyReviewed = product.reviews.find(
+                (r) => r.user.toString() === req.user._id.toString()
+            );
+
+            if (alreadyReviewed) {
+                res.status(400);
+                throw new Error('Produto já avaliado por você');
+            }
+
+            const review = {
+                name: req.user.name,
+                rating: Number(rating),
+                comment,
+                user: req.user._id,
+            };
+
+            // Adiciona a nova review no array
+            product.reviews.push(review);
+
+            // Atualiza o número de reviews
+            product.numReviews = product.reviews.length;
+
+            // CALCULA A MÉDIA DAS ESTRELAS
+            product.rating =
+                product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+                product.reviews.length;
+
+            await product.save();
+            res.status(201).json({ message: 'Avaliação adicionada' });
+        } else {
+            res.status(404);
+            throw new Error('Produto não encontrado');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+export { getProducts, getProductById, createProduct, updateProduct, deleteProduct, getTopProducts, createProductReview };
