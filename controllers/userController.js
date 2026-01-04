@@ -36,6 +36,8 @@ const updateUserProfile = async (req, res, next) => {
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
 
+            user.image = req.body.image || user.image;
+
             if (req.body.password) {
                 user.password = req.body.password;
             }
@@ -62,33 +64,37 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
     try {
-        const { name, email, password, isAdmin } = req.body;
+        // 1. Removi 'isAdmin' daqui. Não deixe o usuário escolher isso!
+        const { name, email, password } = req.body;
 
         const userExists = await User.findOne({ email });
 
         if (userExists) {
             res.status(400);
-            throw new Error('User already exists');
+            throw new Error('Usuário já existe');
         }
 
+        // 2. Criação segura. O Schema do Mongoose já define isAdmin: false por padrão
         const user = await User.create({
             name,
             email,
             password,
-            isAdmin: isAdmin && isAdmin === true ? true : false
+            // Se quiser forçar explicitamente: isAdmin: false 
         });
 
         if (user) {
+            // 3. Loga o usuário e retorna os dados (incluindo a imagem padrão)
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
-                token: generateToken(user._id), // <--- ADICIONADO: Gera o token ao registrar
+                image: user.image, // <--- ADICIONADO: Retorna a imagem padrão (cinza)
+                token: generateToken(user._id),
             });
         } else {
             res.status(400);
-            throw new Error('Invalid user data');
+            throw new Error('Dados de usuário inválidos');
         }
     } catch (error) {
         next(error);
