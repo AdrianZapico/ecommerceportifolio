@@ -80,12 +80,24 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 
-// @desc    Buscar todos os produtos
+// @desc    Fetch all products
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res, next) => {
     try {
-        const products = await Product.find({});
+        // Verifica se existe '?keyword=algumacoisa' na URL
+        const keyword = req.query.keyword
+            ? {
+                name: {
+                    $regex: req.query.keyword, // Busca parcial (ex: "ipho" acha "iPhone")
+                    $options: 'i',             // Case insensitive (ignora maiúsculas/minúsculas)
+                },
+            }
+            : {};
+
+        // Aplica o filtro na busca do banco
+        const products = await Product.find({ ...keyword });
+
         res.json(products);
     } catch (error) {
         next(error);
