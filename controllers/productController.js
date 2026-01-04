@@ -5,27 +5,17 @@ import Product from '../models/productModel.js';
 // @access  Public (should be Private/Admin)
 const createProduct = async (req, res, next) => {
     try {
-        const {
-            name,
-            price,
-            description,
-            image,
-            brand,
-            category,
-            countInStock,
-            user // passed manually
-        } = req.body;
-
+        // Cria um objeto com dados "dummy" (amostra)
         const product = new Product({
-            name,
-            price,
-            user: user, // manually attached
-            image,
-            brand,
-            category,
-            countInStock,
+            name: 'Nome de Amostra',
+            price: 0,
+            user: req.user._id, // <--- PEGA O ID DO ADMIN LOGADO (TOKEN)
+            image: '/images/sample.jpg',
+            brand: 'Marca de Amostra',
+            category: 'Categoria de Amostra',
+            countInStock: 0,
             numReviews: 0,
-            description,
+            description: 'Descrição de amostra',
         });
 
         const createdProduct = await product.save();
@@ -34,7 +24,6 @@ const createProduct = async (req, res, next) => {
         next(error);
     }
 };
-
 // @desc    Update a product
 // @route   PUT /api/products/:id
 // @access  Public (should be Private/Admin)

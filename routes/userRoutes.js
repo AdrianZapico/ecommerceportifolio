@@ -1,11 +1,13 @@
 import express from 'express';
 import {
-    getUsers,
-    getUserById,
+    authUser,
     registerUser,
-    updateUser,
+    getUserProfile,    // <--- 1. Importado
+    updateUserProfile, // <--- 1. Importado
+    getUsers,
     deleteUser,
-    authUser
+    getUserById,
+    updateUser
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -17,9 +19,20 @@ router.route('/')
 
 router.post('/auth', authUser);
 
+// ---------------------------------------------------------
+// 2. AQUI ESTÁ A CORREÇÃO:
+// A rota /profile deve vir ANTES da rota /:id
+// ---------------------------------------------------------
+router.route('/profile')
+    .get(protect, getUserProfile)
+    .put(protect, updateUserProfile);
+
+// ---------------------------------------------------------
+// Rota Genérica /:id (Sempre por último)
+// ---------------------------------------------------------
 router.route('/:id')
+    .delete(protect, admin, deleteUser)
     .get(protect, admin, getUserById)
-    .put(protect, admin, updateUser)
-    .delete(protect, admin, deleteUser);
+    .put(protect, admin, updateUser);
 
 export default router;
