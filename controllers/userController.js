@@ -1,31 +1,89 @@
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
-const getUserProfile = async (req, res, next) => {
+// @desc    Autenticar usuário & obter token
+// @route   POST /api/users/auth
+// @access  Public
+const authUser = async (req, res, next) => {
     try {
-        // Usa o ID do token (req.user._id) para buscar os dados
-        const user = await User.findById(req.user._id);
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
 
-        if (user) {
+        if (user && (await user.matchPassword(password))) {
             res.json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
+                image: user.image,
+                token: generateToken(user._id),
             });
         } else {
-            res.status(404);
-            throw new Error('User not found');
+            res.status(401);
+            throw new Error('Email ou senha inválidos');
         }
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Update user profile
+// @desc    Registrar novo usuário
+// @route   POST /api/users
+// @access  Public
+const registerUser = async (req, res, next) => {
+    try {
+        const { name, email, password } = req.body;
+        const userExists = await User.findOne({ email });
+
+        if (userExists) {
+            res.status(400);
+            throw new Error('Usuário já existe');
+        }
+
+        const user = await User.create({ name, email, password });
+
+        if (user) {
+            res.status(201).json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                image: user.image,
+                token: generateToken(user._id),
+            });
+        } else {
+            res.status(400);
+            throw new Error('Dados de usuário inválidos');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Obter perfil do usuário logado
+// @route   GET /api/users/profile
+// @access  Private
+const getUserProfile = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (user) {
+            res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin,
+                image: user.image,
+            });
+        } else {
+            res.status(404);
+            throw new Error('Usuário não encontrado');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Atualizar perfil do usuário logado
 // @route   PUT /api/users/profile
 // @access  Private
 const updateUserProfile = async (req, res, next) => {
@@ -33,18 +91,13 @@ const updateUserProfile = async (req, res, next) => {
         const user = await User.findById(req.user._id);
 
         if (user) {
-            // Atualiza campos básicos
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
             user.image = req.body.image || user.image;
 
-            // --- A MÁGICA ESTÁ AQUI ---
-            // Só atribuímos a senha se o usuário enviou algo no campo
             if (req.body.password && req.body.password.trim() !== '') {
                 user.password = req.body.password;
             }
-            // Se o campo estiver vazio, NÃO mexemos em user.password.
-            // Assim, o Mongoose mantém a senha antiga intacta no banco.
 
             const updatedUser = await user.save();
 
@@ -64,102 +117,10 @@ const updateUserProfile = async (req, res, next) => {
         next(error);
     }
 };
-// @desc    Register a new user
-// @route   POST /api/users
-// @access  Public
-const registerUser = async (req, res, next) => {
-    try {
-        // 1. Removi 'isAdmin' daqui. Não deixe o usuário escolher isso!
-        const { name, email, password } = req.body;
 
-        const userExists = await User.findOne({ email });
+// --- ROTAS DE ADMIN ---
 
-        if (userExists) {
-            res.status(400);
-            throw new Error('Usuário já existe');
-        }
-
-        // 2. Criação segura. O Schema do Mongoose já define isAdmin: false por padrão
-        const user = await User.create({
-            name,
-            email,
-            password,
-            // Se quiser forçar explicitamente: isAdmin: false 
-        });
-
-        if (user) {
-            // 3. Loga o usuário e retorna os dados (incluindo a imagem padrão)
-            res.status(201).json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                image: user.image, // <--- ADICIONADO: Retorna a imagem padrão (cinza)
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(400);
-            throw new Error('Dados de usuário inválidos');
-        }
-    } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Update user
-// @route   PUT /api/users/:id
-// @access  Private/Admin
-const updateUser = async (req, res, next) => {
-    try {
-        const { name, email, password, isAdmin } = req.body;
-
-        const user = await User.findById(req.params.id);
-
-        if (user) {
-            user.name = name || user.name;
-            user.email = email || user.email;
-            if (password) {
-                user.password = password;
-            }
-            user.isAdmin = isAdmin === undefined ? user.isAdmin : isAdmin;
-
-            const updatedUser = await user.save();
-
-            res.json({
-                _id: updatedUser._id,
-                name: updatedUser.name,
-                email: updatedUser.email,
-                isAdmin: updatedUser.isAdmin,
-            });
-        } else {
-            res.status(404);
-            throw new Error('User not found');
-        }
-    } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Delete user
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
-const deleteUser = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.params.id);
-
-        if (user) {
-            await user.deleteOne();
-            res.json({ message: 'User removed' });
-        } else {
-            res.status(404);
-            throw new Error('User not found');
-        }
-    } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Buscar todos os usuários
+// @desc    Obter todos os usuários
 // @route   GET /api/users
 // @access  Private/Admin
 const getUsers = async (req, res, next) => {
@@ -171,46 +132,68 @@ const getUsers = async (req, res, next) => {
     }
 };
 
-// @desc    Buscar um único usuário por ID
-// @route   GET /api/users/:id
+// @desc    Deletar usuário
+// @route   DELETE /api/users/:id
 // @access  Private/Admin
-const getUserById = async (req, res, next) => {
+const deleteUser = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
-
         if (user) {
-            return res.json(user);
+            if (user.isAdmin) {
+                res.status(400);
+                throw new Error('Não é possível deletar um administrador');
+            }
+            await user.deleteOne();
+            res.json({ message: 'Usuário removido' });
         } else {
             res.status(404);
-            throw new Error('User not found');
+            throw new Error('Usuário não encontrado');
         }
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Auth user & get token
-// @route   POST /api/users/auth
-// @access  Public
-const authUser = async (req, res, next) => {
+// @desc    Obter usuário por ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+const getUserById = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const user = await User.findById(req.params.id).select('-password');
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404);
+            throw new Error('Usuário não encontrado');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
 
-        // Busca o usuário pelo email
-        const user = await User.findOne({ email });
+// @desc    Atualizar usuário (Admin)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
 
-        // Verifica se usuário existe E se a senha bate (usando o método do Model)
-        if (user && (await user.matchPassword(password))) {
+        if (user) {
+            user.name = req.body.name || user.name;
+            user.email = req.body.email || user.email;
+            user.isAdmin = Boolean(req.body.isAdmin);
+
+            const updatedUser = await user.save();
+
             res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                isAdmin: user.isAdmin,
-                token: generateToken(user._id), // Gera o token para o Frontend salvar
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                isAdmin: updatedUser.isAdmin,
             });
         } else {
-            res.status(401);
-            throw new Error('Email ou senha inválidos');
+            res.status(404);
+            throw new Error('Usuário não encontrado');
         }
     } catch (error) {
         next(error);
@@ -218,5 +201,12 @@ const authUser = async (req, res, next) => {
 };
 
 export {
-    authUser, registerUser, getUserProfile, updateUserProfile, getUsers, getUserById, updateUser, deleteUser
+    authUser,
+    registerUser,
+    getUserProfile,
+    updateUserProfile,
+    getUsers,
+    deleteUser,
+    getUserById,
+    updateUser,
 };

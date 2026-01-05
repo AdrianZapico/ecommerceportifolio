@@ -2,8 +2,8 @@ import express from 'express';
 import {
     authUser,
     registerUser,
-    getUserProfile,    // <--- 1. Importado
-    updateUserProfile, // <--- 1. Importado
+    getUserProfile,
+    updateUserProfile,
     getUsers,
     deleteUser,
     getUserById,
@@ -13,23 +13,20 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// Rotas Base
 router.route('/')
     .post(registerUser)
     .get(protect, admin, getUsers);
 
+// Login
 router.post('/auth', authUser);
 
-// ---------------------------------------------------------
-// 2. AQUI ESTÁ A CORREÇÃO:
-// A rota /profile deve vir ANTES da rota /:id
-// ---------------------------------------------------------
+// Perfil (Sempre antes das rotas com :id dinâmico)
 router.route('/profile')
     .get(protect, getUserProfile)
     .put(protect, updateUserProfile);
 
-// ---------------------------------------------------------
-// Rota Genérica /:id (Sempre por último)
-// ---------------------------------------------------------
+// Operações por ID (Admin)
 router.route('/:id')
     .delete(protect, admin, deleteUser)
     .get(protect, admin, getUserById)
