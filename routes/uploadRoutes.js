@@ -20,16 +20,16 @@ const storage = multer.diskStorage({
 
 
 function checkFileType(file, cb) {
-    const filetypes = /jpg|jpeg|png/;
-
+    // Adicione webp aqui
+    const filetypes = /jpg|jpeg|png|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
     const mimetype = filetypes.test(file.mimetype);
 
     if (extname && mimetype) {
         return cb(null, true);
     } else {
-        cb('Imagens apenas!');
+        // Se cair aqui, o multer lança um erro que pode virar 500 se não tratado
+        cb(new Error('Apenas imagens (jpg, jpeg, png, webp)!'));
     }
 }
 
@@ -42,8 +42,22 @@ const upload = multer({
 });
 
 
-router.post('/', upload.single('image'), (req, res) => {
-    res.send(`/${req.file.path.replace(/\\/g, '/')}`);
+router.post('/', (req, res) => {
+    upload.single('image')(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            // Erro do próprio Multer
+            return res.status(400).send({ message: `Erro no Multer: ${err.message}` });
+        } else if (err) {
+            // Erro da nossa função checkFileType
+            return res.status(400).send({ message: err.message });
+        }
+
+        if (!req.file) {
+            return res.status(400).send({ message: 'Nenhum arquivo enviado!' });
+        }
+
+        res.send(`/${req.file.path.replace(/\\/g, '/')}`);
+    });
 });
 
 export default router;
