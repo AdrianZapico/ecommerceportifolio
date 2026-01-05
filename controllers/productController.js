@@ -1,21 +1,20 @@
 import Product from '../models/productModel.js';
 
-// @desc    Create a product
+// @desc    Criar um produto (Amostra)
 // @route   POST /api/products
-// @access  Public (should be Private/Admin)
+// @access  Private/Admin
 const createProduct = async (req, res, next) => {
     try {
-        // Cria um objeto com dados "dummy" (amostra)
         const product = new Product({
-            name: 'Nome de Amostra',
+            name: 'Novo Produto',
             price: 0,
-            user: req.user._id, // <--- PEGA O ID DO ADMIN LOGADO (TOKEN)
+            user: req.user._id,
             image: '/images/sample.jpg',
-            brand: 'Marca de Amostra',
-            category: 'Categoria de Amostra',
+            brand: 'Marca',
+            category: 'Categoria',
             countInStock: 0,
             numReviews: 0,
-            description: 'Descrição de amostra',
+            description: 'Descrição aqui...',
         });
 
         const createdProduct = await product.save();
@@ -24,129 +23,98 @@ const createProduct = async (req, res, next) => {
         next(error);
     }
 };
-// @desc    Update a product
+
+// @desc    Atualizar um produto
 // @route   PUT /api/products/:id
-// @access  Public (should be Private/Admin)
+// @access  Private/Admin
 const updateProduct = async (req, res, next) => {
     try {
-        const {
-            name,
-            price,
-            description,
-            image,
-            brand,
-            category,
-            countInStock,
-        } = req.body;
-
+        const { name, price, description, image, brand, category, countInStock } = req.body;
         const product = await Product.findById(req.params.id);
 
-        if (product) {
-            product.name = name || product.name;
-            product.price = price || product.price;
-            product.description = description || product.description;
-            product.image = image || product.image;
-            product.brand = brand || product.brand;
-            product.category = category || product.category;
-            product.countInStock = countInStock || product.countInStock;
-
-            const updatedProduct = await product.save();
-            res.json(updatedProduct);
-        } else {
+        if (!product) {
             res.status(404);
-            throw new Error('Product not found');
+            throw new Error('Produto não encontrado');
         }
+
+        // Atualização seletiva
+        product.name = name || product.name;
+        product.price = price ?? product.price; // ?? garante que 0 não seja ignorado
+        product.description = description || product.description;
+        product.image = image || product.image;
+        product.brand = brand || product.brand;
+        product.category = category || product.category;
+        product.countInStock = countInStock ?? product.countInStock;
+
+        const updatedProduct = await product.save();
+        res.json(updatedProduct);
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Delete a product
+// @desc    Deletar um produto
 // @route   DELETE /api/products/:id
-// @access  Public (should be Private/Admin)
+// @access  Private/Admin
 const deleteProduct = async (req, res, next) => {
     try {
         const product = await Product.findById(req.params.id);
 
-        if (product) {
-            await product.deleteOne();
-            res.json({ message: 'Product removed' });
-        } else {
+        if (!product) {
             res.status(404);
-            throw new Error('Product not found');
+            throw new Error('Produto não encontrado');
         }
+
+        await product.deleteOne();
+        res.json({ message: 'Produto removido com sucesso' });
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Fetch all products
-// @route   GET /api/products
-// @access  Public
-// @desc    Fetch all products
+// @desc    Buscar produtos com paginação e busca
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res, next) => {
     try {
-        const pageSize = 4;
+        const pageSize = 8; // Aumentei um pouco para ocupar melhor a tela
         const page = Number(req.query.pageNumber) || 1;
 
-        const keyword = req.query.keyword
-            ? {
-                name: {
-                    $regex: req.query.keyword,
-                    $options: 'i',
-                },
-            }
-            : {};
+        const keyword = req.query.keyword ? {
+            name: { $regex: req.query.keyword, $options: 'i' }
+        } : {};
 
         const count = await Product.countDocuments({ ...keyword });
-
-
         const products = await Product.find({ ...keyword })
             .limit(pageSize)
-            .skip(pageSize * (page - 1));
-
+            .skip(pageSize * (page - 1))
+            .sort({ createdAt: -1 }); // Produtos novos primeiro
 
         res.json({ products, page, pages: Math.ceil(count / pageSize) });
-
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Buscar um único produto por ID
+// @desc    Buscar produto por ID
 // @route   GET /api/products/:id
 // @access  Public
 const getProductById = async (req, res, next) => {
     try {
         const product = await Product.findById(req.params.id);
 
-        if (product) {
-            return res.json(product);
-        } else {
+        if (!product) {
             res.status(404);
-            throw new Error('Product not found');
+            throw new Error('Produto não encontrado');
         }
+
+        res.json(product);
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Get top rated products
-// @route   GET /api/products/top
-// @access  Public
-const getTopProducts = async (req, res, next) => {
-    try {
-        // Busca todos, ordena por 'rating' decrescente (-1) e pega só os 3 primeiros
-        const products = await Product.find({}).sort({ rating: -1 }).limit(3);
-        res.json(products);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Create new review
+// @desc    Criar avaliação
 // @route   POST /api/products/:id/reviews
 // @access  Private
 const createProductReview = async (req, res, next) => {
@@ -154,44 +122,58 @@ const createProductReview = async (req, res, next) => {
         const { rating, comment } = req.body;
         const product = await Product.findById(req.params.id);
 
-        if (product) {
-            // Verifica se o usuário já avaliou este produto
-            const alreadyReviewed = product.reviews.find(
-                (r) => r.user.toString() === req.user._id.toString()
-            );
-
-            if (alreadyReviewed) {
-                res.status(400);
-                throw new Error('Produto já avaliado por você');
-            }
-
-            const review = {
-                name: req.user.name,
-                rating: Number(rating),
-                comment,
-                user: req.user._id,
-            };
-
-            // Adiciona a nova review no array
-            product.reviews.push(review);
-
-            // Atualiza o número de reviews
-            product.numReviews = product.reviews.length;
-
-            // CALCULA A MÉDIA DAS ESTRELAS
-            product.rating =
-                product.reviews.reduce((acc, item) => item.rating + acc, 0) /
-                product.reviews.length;
-
-            await product.save();
-            res.status(201).json({ message: 'Avaliação adicionada' });
-        } else {
+        if (!product) {
             res.status(404);
             throw new Error('Produto não encontrado');
         }
+
+        const alreadyReviewed = product.reviews.find(
+            (r) => r.user.toString() === req.user._id.toString()
+        );
+
+        if (alreadyReviewed) {
+            res.status(400);
+            throw new Error('Você já avaliou este produto');
+        }
+
+        const review = {
+            name: req.user.name,
+            rating: Number(rating),
+            comment,
+            user: req.user._id,
+        };
+
+        product.reviews.push(review);
+        product.numReviews = product.reviews.length;
+
+        // Cálculo de média mais limpo
+        product.rating = product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.numReviews;
+
+        await product.save();
+        res.status(201).json({ message: 'Avaliação adicionada' });
     } catch (error) {
         next(error);
     }
 };
 
-export { getProducts, getProductById, createProduct, updateProduct, deleteProduct, getTopProducts, createProductReview };
+// @desc    Produtos mais bem avaliados (Carrossel)
+// @route   GET /api/products/top
+// @access  Public
+const getTopProducts = async (req, res, next) => {
+    try {
+        const products = await Product.find({}).sort({ rating: -1 }).limit(3);
+        res.json(products);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export {
+    getProducts,
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    getTopProducts,
+    createProductReview
+};

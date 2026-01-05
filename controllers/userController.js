@@ -33,14 +33,18 @@ const updateUserProfile = async (req, res, next) => {
         const user = await User.findById(req.user._id);
 
         if (user) {
+            // Atualiza campos básicos
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
-
             user.image = req.body.image || user.image;
 
-            if (req.body.password) {
+            // --- A MÁGICA ESTÁ AQUI ---
+            // Só atribuímos a senha se o usuário enviou algo no campo
+            if (req.body.password && req.body.password.trim() !== '') {
                 user.password = req.body.password;
             }
+            // Se o campo estiver vazio, NÃO mexemos em user.password.
+            // Assim, o Mongoose mantém a senha antiga intacta no banco.
 
             const updatedUser = await user.save();
 
@@ -49,11 +53,12 @@ const updateUserProfile = async (req, res, next) => {
                 name: updatedUser.name,
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
+                image: updatedUser.image,
                 token: generateToken(updatedUser._id),
             });
         } else {
             res.status(404);
-            throw new Error('User not found');
+            throw new Error('Usuário não encontrado');
         }
     } catch (error) {
         next(error);
