@@ -19,6 +19,8 @@ connectDB();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // --- CONFIGURAÇÃO DE SEGURANÇA (CORS) ---
 // Permite que o Netlify converse com este servidor e envie cookies
 app.use(cors({
