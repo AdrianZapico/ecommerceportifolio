@@ -17,10 +17,10 @@ const port = process.env.PORT || 5000;
 connectDB();
 
 const app = express();
-app.use(cors());
 
+// Substitua tudo o que tiver de 'app.use(cors...)' por APENAS isso:
 app.use(cors({
-    origin: '*',
+    origin: 'https://ecommerce-front-endd.netlify.app', // Sem a barra '/' no final
     credentials: true
 }));
 
