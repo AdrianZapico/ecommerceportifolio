@@ -10,13 +10,16 @@ const authUser = async (req, res, next) => {
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
+            // 1. Gera o Cookie (CORREÇÃO AQUI)
+            generateToken(res, user._id);
+
+            // 2. Envia a resposta (Sem o token no corpo, pois ele já foi no cookie)
             res.json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
                 image: user.image,
-                token: generateToken(user._id),
             });
         } else {
             res.status(401);
@@ -43,13 +46,15 @@ const registerUser = async (req, res, next) => {
         const user = await User.create({ name, email, password });
 
         if (user) {
+            // 1. Gera o Cookie para o novo usuário (CORREÇÃO AQUI)
+            generateToken(res, user._id);
+
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
                 image: user.image,
-                token: generateToken(user._id),
             });
         } else {
             res.status(400);
@@ -101,13 +106,15 @@ const updateUserProfile = async (req, res, next) => {
 
             const updatedUser = await user.save();
 
+            // Opcional: Renovamos o token/cookie quando o usuário atualiza o perfil
+            generateToken(res, updatedUser._id);
+
             res.json({
                 _id: updatedUser._id,
                 name: updatedUser.name,
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
                 image: updatedUser.image,
-                token: generateToken(updatedUser._id),
             });
         } else {
             res.status(404);
