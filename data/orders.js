@@ -6,7 +6,7 @@ const orders = [
                 qty: 1,
                 image: '/images/airpods.jpg',
                 price: 89.99,
-                product: null, // to be populated by seeder
+                product: null,
             },
         ],
         totalPrice: 89.99,
@@ -21,14 +21,14 @@ const orders = [
                 qty: 1,
                 image: '/images/phone.jpg',
                 price: 599.99,
-                product: null, // to be populated by seeder
+                product: null,
             },
             {
                 name: 'Cannon EOS 80D DSLR Camera',
                 qty: 1,
                 image: '/images/camera.jpg',
                 price: 929.99,
-                product: null, // to be populated by seeder
+                product: null,
             },
         ],
         totalPrice: 1529.98,
@@ -42,7 +42,7 @@ const orders = [
                 qty: 1,
                 image: '/images/airpods.jpg',
                 price: 89.99,
-                product: null, // to be populated by seeder
+                product: null,
             },
         ],
         totalPrice: 399.99,

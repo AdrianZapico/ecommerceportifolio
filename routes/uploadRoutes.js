@@ -20,7 +20,6 @@ const storage = multer.diskStorage({
 
 
 function checkFileType(file, cb) {
-    // Adicione webp aqui
     const filetypes = /jpg|jpeg|png|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
@@ -28,7 +27,6 @@ function checkFileType(file, cb) {
     if (extname && mimetype) {
         return cb(null, true);
     } else {
-        // Se cair aqui, o multer lança um erro que pode virar 500 se não tratado
         cb(new Error('Apenas imagens (jpg, jpeg, png, webp)!'));
     }
 }
@@ -45,10 +43,8 @@ const upload = multer({
 router.post('/', (req, res) => {
     upload.single('image')(req, res, function (err) {
         if (err instanceof multer.MulterError) {
-            // Erro do próprio Multer
             return res.status(400).send({ message: `Erro no Multer: ${err.message}` });
         } else if (err) {
-            // Erro da nossa função checkFileType
             return res.status(400).send({ message: err.message });
         }
 

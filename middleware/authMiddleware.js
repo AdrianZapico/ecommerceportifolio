@@ -5,14 +5,12 @@ import User from '../models/userModel.js';
 const protect = asyncHandler(async (req, res, next) => {
     let token;
 
-    // 1. A MUDANÇA PRINCIPAL: Ler do Cookie 'jwt'
     token = req.cookies.jwt;
 
     if (token) {
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // 2. CORREÇÃO DE ID: No seu generateToken você usou 'userId', aqui estava 'id'
             req.user = await User.findById(decoded.userId).select('-password');
 
             next();

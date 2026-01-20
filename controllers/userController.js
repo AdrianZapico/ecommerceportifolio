@@ -1,19 +1,14 @@
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
 
-// @desc    Autenticar usuário & obter token
-// @route   POST /api/users/auth
-// @access  Public
 const authUser = async (req, res, next) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
-            // 1. Gera o Cookie (CORREÇÃO AQUI)
             generateToken(res, user._id);
 
-            // 2. Envia a resposta (Sem o token no corpo, pois ele já foi no cookie)
             res.json({
                 _id: user._id,
                 name: user.name,
@@ -30,9 +25,6 @@ const authUser = async (req, res, next) => {
     }
 };
 
-// @desc    Registrar novo usuário
-// @route   POST /api/users
-// @access  Public
 const registerUser = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
@@ -46,7 +38,6 @@ const registerUser = async (req, res, next) => {
         const user = await User.create({ name, email, password });
 
         if (user) {
-            // 1. Gera o Cookie para o novo usuário (CORREÇÃO AQUI)
             generateToken(res, user._id);
 
             res.status(201).json({
@@ -65,9 +56,6 @@ const registerUser = async (req, res, next) => {
     }
 };
 
-// @desc    Obter perfil do usuário logado
-// @route   GET /api/users/profile
-// @access  Private
 const getUserProfile = async (req, res, next) => {
     try {
         const user = await User.findById(req.user._id);
@@ -88,9 +76,6 @@ const getUserProfile = async (req, res, next) => {
     }
 };
 
-// @desc    Atualizar perfil do usuário logado
-// @route   PUT /api/users/profile
-// @access  Private
 const updateUserProfile = async (req, res, next) => {
     try {
         const user = await User.findById(req.user._id);
@@ -106,7 +91,6 @@ const updateUserProfile = async (req, res, next) => {
 
             const updatedUser = await user.save();
 
-            // Opcional: Renovamos o token/cookie quando o usuário atualiza o perfil
             generateToken(res, updatedUser._id);
 
             res.json({
@@ -125,11 +109,6 @@ const updateUserProfile = async (req, res, next) => {
     }
 };
 
-// --- ROTAS DE ADMIN ---
-
-// @desc    Obter todos os usuários
-// @route   GET /api/users
-// @access  Private/Admin
 const getUsers = async (req, res, next) => {
     try {
         const users = await User.find({});
@@ -139,9 +118,6 @@ const getUsers = async (req, res, next) => {
     }
 };
 
-// @desc    Deletar usuário
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
 const deleteUser = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
@@ -161,9 +137,6 @@ const deleteUser = async (req, res, next) => {
     }
 };
 
-// @desc    Obter usuário por ID
-// @route   GET /api/users/:id
-// @access  Private/Admin
 const getUserById = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id).select('-password');
@@ -178,9 +151,6 @@ const getUserById = async (req, res, next) => {
     }
 };
 
-// @desc    Atualizar usuário (Admin)
-// @route   PUT /api/users/:id
-// @access  Private/Admin
 const updateUser = async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);

@@ -20,26 +20,22 @@ const orderSchema = mongoose.Schema(
                 },
             },
         ],
-        // --- NOVO: Endereço de Entrega (Obrigatório para envio) ---
         shippingAddress: {
             address: { type: String, required: true },
             city: { type: String, required: true },
             postalCode: { type: String, required: true },
             country: { type: String, required: true },
         },
-        // --- NOVO: Método de Pagamento (ex: 'PayPal') ---
         paymentMethod: {
             type: String,
             required: true,
         },
-        // --- NOVO: Resultado do Pagamento (Vem do PayPal/Stripe) ---
         paymentResult: {
             id: { type: String },
             status: { type: String },
             update_time: { type: String },
             email_address: { type: String },
         },
-        // --- NOVO: Detalhamento de Preços (Boas práticas fiscais) ---
         itemsPrice: {
             type: Number,
             required: true,
@@ -60,7 +56,6 @@ const orderSchema = mongoose.Schema(
             required: true,
             default: 0.0,
         },
-        // --- Status do Pedido ---
         isPaid: {
             type: Boolean,
             required: true,

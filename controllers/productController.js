@@ -1,8 +1,5 @@
 import Product from '../models/productModel.js';
 
-// @desc    Criar um produto (Amostra)
-// @route   POST /api/products
-// @access  Private/Admin
 const createProduct = async (req, res, next) => {
     try {
         const product = new Product({
@@ -24,9 +21,6 @@ const createProduct = async (req, res, next) => {
     }
 };
 
-// @desc    Atualizar um produto
-// @route   PUT /api/products/:id
-// @access  Private/Admin
 const updateProduct = async (req, res, next) => {
     try {
         const { name, price, description, image, brand, category, countInStock } = req.body;
@@ -37,9 +31,8 @@ const updateProduct = async (req, res, next) => {
             throw new Error('Produto não encontrado');
         }
 
-        // Atualização seletiva
         product.name = name || product.name;
-        product.price = price ?? product.price; // ?? garante que 0 não seja ignorado
+        product.price = price ?? product.price;
         product.description = description || product.description;
         product.image = image || product.image;
         product.brand = brand || product.brand;
@@ -53,9 +46,6 @@ const updateProduct = async (req, res, next) => {
     }
 };
 
-// @desc    Deletar um produto
-// @route   DELETE /api/products/:id
-// @access  Private/Admin
 const deleteProduct = async (req, res, next) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -72,12 +62,9 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 
-// @desc    Buscar produtos com paginação e busca
-// @route   GET /api/products
-// @access  Public
 const getProducts = async (req, res, next) => {
     try {
-        const pageSize = 8; // Aumentei um pouco para ocupar melhor a tela
+        const pageSize = 8;
         const page = Number(req.query.pageNumber) || 1;
 
         const keyword = req.query.keyword ? {
@@ -88,7 +75,7 @@ const getProducts = async (req, res, next) => {
         const products = await Product.find({ ...keyword })
             .limit(pageSize)
             .skip(pageSize * (page - 1))
-            .sort({ createdAt: -1 }); // Produtos novos primeiro
+            .sort({ createdAt: -1 });
 
         res.json({ products, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
@@ -96,9 +83,6 @@ const getProducts = async (req, res, next) => {
     }
 };
 
-// @desc    Buscar produto por ID
-// @route   GET /api/products/:id
-// @access  Public
 const getProductById = async (req, res, next) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -114,9 +98,6 @@ const getProductById = async (req, res, next) => {
     }
 };
 
-// @desc    Criar avaliação
-// @route   POST /api/products/:id/reviews
-// @access  Private
 const createProductReview = async (req, res, next) => {
     try {
         const { rating, comment } = req.body;
@@ -146,7 +127,6 @@ const createProductReview = async (req, res, next) => {
         product.reviews.push(review);
         product.numReviews = product.reviews.length;
 
-        // Cálculo de média mais limpo
         product.rating = product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.numReviews;
 
         await product.save();
@@ -156,9 +136,6 @@ const createProductReview = async (req, res, next) => {
     }
 };
 
-// @desc    Produtos mais bem avaliados (Carrossel)
-// @route   GET /api/products/top
-// @access  Public
 const getTopProducts = async (req, res, next) => {
     try {
         const products = await Product.find({}).sort({ rating: -1 }).limit(3);
